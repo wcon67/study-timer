@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>수능 공부 타이머</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="수능 타이머">
+<meta name="theme-color" content="#DCDFE3">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --paper:#DCDFE3; --card:#EFF1F3; --ink:#101418; --ink-2:#5A626B; --line:#C3C8CE;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;background:var(--paper)}
+body{
+  color:var(--ink);
+  font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+  -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+#app{
+  padding:max(20px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right))
+          calc(40px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+}
+.wrap{max-width:600px;margin:0 auto}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);font-weight:600}
+.date{font-size:22px;font-weight:700;margin:4px 0 0;letter-spacing:-.02em}
+.head-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.dchip{text-align:right;line-height:1}
+.dchip-num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;
+  font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--ink-2)}
+.dchip.main .dchip-num{font-size:28px;color:var(--ink)}
+.dchip-lab{display:block;font-size:10.5px;color:var(--ink-2);margin-top:3px}
+
+.motto{display:flex;align-items:flex-start;gap:9px;width:100%;text-align:left;margin-top:16px;
+  background:#fff;border:1px solid var(--line);border-radius:8px;padding:13px 15px;color:var(--ink)}
+.motto.blank{background:none;border-style:dashed;color:var(--ink-2)}
+.motto-mark{font-size:22px;line-height:.9;color:var(--ink-2);flex:none;font-family:Georgia,serif}
+.motto-text{font-size:15px;font-weight:600;line-height:1.45;letter-spacing:-.01em}
+.motto.blank .motto-text{font-weight:500}
+.motto-edit{background:#fff;border:1px solid var(--line);border-radius:8px;padding:13px 15px;margin-top:16px}
+.motto-input{width:100%;border:none;background:none;font-family:inherit;font-size:16px;font-weight:600;color:var(--ink);padding:0;outline:none}
+.motto-foot{display:flex;align-items:center;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}
+.count{font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.count.full{color:#8A2E20;font-weight:700}
+.motto-acts{display:flex;gap:6px}
+
+.tabs{display:flex;align-items:center;gap:6px;margin:18px 0 14px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:none;padding:11px 2px;margin-right:18px;font-size:14.5px;font-weight:600;color:var(--ink-2);
+  border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.tab-edit{margin-left:auto;margin-bottom:8px}
+
+.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:13px;color:var(--ink);font-weight:600}
+.ghost.danger{color:#8A2E20;border-color:#C9AFA9}
+.solid{background:var(--ink);color:#fff;border:1px solid var(--ink);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700}
+.solid:disabled{opacity:.35}
+
+.alert{background:#fff;border:1px solid #C9AFA9;border-radius:8px;padding:13px 15px;margin-bottom:14px;font-size:13.5px;line-height:1.6}
+.alert-acts{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+
+.cols{display:block}
+.bar{display:flex;gap:2px;height:52px;width:100%;position:relative}
+.seg{position:relative;overflow:hidden;border-radius:2px;min-width:3px;transition:flex-grow .25s linear}
+.plan{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--card);opacity:.7}
+.goal-mark{position:absolute;top:-3px;bottom:-3px;width:0;border-left:2px dotted var(--ink);z-index:3}
+.goal-mark span{position:absolute;left:5px;bottom:-19px;font-size:10px;font-weight:700;color:var(--ink);
+  background:var(--paper);padding:0 4px;white-space:nowrap}
+.seg-fill{position:absolute;left:0;top:0;bottom:0;transition:width .25s linear}
+.unalloc{background:repeating-linear-gradient(135deg,#C9CDD2 0 5px,#D4D8DC 5px 10px)}
+.cursor{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;animation:bk 1.1s steps(2,start) infinite}
+@keyframes bk{0%,100%{opacity:1}50%{opacity:.15}}
+.bar-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-2);margin-top:6px;font-variant-numeric:tabular-nums}
+
+.display{text-align:center;padding:26px 0 22px;border-bottom:1px solid var(--line)}
+.disp-label{font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px}
+.disp-label.muted{color:var(--ink-2);font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+.disp-num{font-size:52px;font-weight:600;letter-spacing:-.03em;line-height:1.05;margin:8px 0 6px;
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+.disp-sub{font-size:12.5px;color:var(--ink-2)}
+
+.budget{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.budget-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.k{font-size:13.5px;font-weight:600}
+.budget-note{font-size:12px;color:var(--ink-2);margin-top:9px;line-height:1.55}
+.budget-note.warn{color:#8A2E20;font-weight:600}
+.divider{height:1px;background:var(--line);margin:16px 0}
+.target-row{display:flex;gap:8px;align-items:center;margin-top:9px}
+.target-row .name-input{flex:1;max-width:none}
+.date-input{border:1px solid var(--line);border-radius:6px;padding:7px 9px;font-size:16px;background:#fff;color:var(--ink);font-family:inherit;flex:none}
+.ta{width:100%;margin-top:10px;min-height:64px;border:1px solid var(--line);border-radius:6px;padding:9px;
+  font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#fff;color:var(--ink);resize:vertical}
+.data-acts{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.msg{font-size:12px;color:var(--ink-2)}
+
+.stepper{display:flex;align-items:center;gap:2px}
+.stepper button{width:38px;height:38px;border:1px solid var(--line);background:#fff;border-radius:6px;font-size:18px;line-height:1;color:var(--ink)}
+.stepper .v{min-width:88px;text-align:center;font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.stepper.small button{width:34px;height:34px;font-size:16px}
+.stepper.small .v{min-width:78px;font-size:12.5px}
+
+.list{list-style:none;padding:0;margin:14px 0 0}
+.row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:13px 13px 13px 0;margin-bottom:9px;overflow:hidden}
+.row.on{background:#fff;border-width:1.5px}
+.tick{width:4px;align-self:stretch;flex:none;border-radius:0 3px 3px 0}
+.row-main{flex:1;min-width:0;padding-left:9px}
+.name{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.name-input{font-size:16px;font-weight:600;border:1px solid var(--line);border-radius:5px;padding:6px 9px;width:100%;max-width:190px;background:#fff;color:var(--ink);font-family:inherit}
+.meta{display:flex;align-items:baseline;gap:6px;font-size:12px;color:var(--ink-2);margin-top:4px;flex-wrap:wrap}
+.meta .mono{color:var(--ink);font-size:12.5px}
+.sep{opacity:.45}
+.left{margin-left:2px;padding-left:8px;border-left:1px solid var(--line)}
+.left.over{font-weight:700}
+.play{flex:none;border:1.5px solid;background:#fff;border-radius:999px;padding:11px 18px;font-size:13.5px;font-weight:700;min-width:88px}
+.del{flex:none;border:1px solid var(--line);background:#fff;border-radius:6px;padding:10px 13px;font-size:12.5px;color:var(--ink-2)}
+.del.confirm{border-color:#8A2E20;color:#8A2E20;font-weight:700}
+.add{width:100%;border:1px dashed var(--line);background:none;border-radius:8px;padding:13px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.foot{margin-top:24px;text-align:center}
+
+.empty{text-align:center;padding:48px 20px}
+.empty-t{font-size:15px;font-weight:700}
+.empty-s{font-size:13px;color:var(--ink-2);margin-top:8px;line-height:1.6}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:11px 8px;text-align:center}
+.stat-k{font-size:10.5px;color:var(--ink-2);font-weight:600;letter-spacing:.04em}
+.stat-v{font-size:19px;font-weight:700;letter-spacing:-.02em;margin:3px 0 2px}
+.stat-s{font-size:10px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.range{display:flex;gap:4px}
+.rbtn{border:1px solid var(--line);background:none;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.rbtn.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chart{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 12px 10px}
+.chart-plot{position:relative;display:flex;gap:4px;align-items:flex-end}
+.goal-line{position:absolute;left:0;right:0;height:0;border-top:1px dashed #9AA2AA;z-index:1}
+.goal-tag{position:absolute;right:0;top:-14px;font-size:9.5px;color:var(--ink-2);background:var(--card);padding:0 3px}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center}
+.col-val{font-size:9.5px;color:var(--ink-2);height:12px;font-variant-numeric:tabular-nums}
+.col-track{width:100%;height:150px;display:flex;align-items:flex-end;background:#00000008;border-radius:3px;overflow:hidden}
+.col-stack{width:100%;display:flex;flex-direction:column-reverse;min-height:2px;border-radius:3px 3px 0 0;overflow:hidden}
+.col-stack.today{outline:1.5px solid var(--ink);outline-offset:-1.5px;border-radius:3px}
+.col-seg{width:100%;min-height:1px}
+.col-lab{font-size:9.5px;color:var(--ink-2);margin-top:5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.col-lab.today{color:var(--ink);font-weight:700}
+
+.log-cols{display:block}
+.block{margin-top:26px}
+.mixbar{display:flex;gap:2px;height:14px;margin:10px 0 12px}
+.mix-seg{border-radius:2px;min-width:2px}
+.sublist{list-style:none;padding:0;margin:0}
+.sublist li{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.sublist li:last-child{border-bottom:none}
+.sub-n{flex:1;font-weight:600}
+.sub-p{color:var(--ink-2);font-size:12px;min-width:34px;text-align:right}
+.sub-v{min-width:52px;text-align:right;font-size:12.5px}
+.proj{font-size:13.5px;line-height:1.7;margin:10px 0 0}
+.proj b{font-weight:700}
+.proj-cav{font-size:11.5px;line-height:1.6;color:var(--ink-2);margin:8px 0 0}
+.mottolog{list-style:none;padding:0;margin:10px 0 0}
+.mottolog li{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.mottolog li:last-child{border-bottom:none}
+.ml-d{color:var(--ink-2);flex:none;font-size:11.5px;padding-top:1px}
+.ml-t{line-height:1.5}
+
+@media (min-width:820px){
+  #app{padding-left:max(34px,env(safe-area-inset-left));padding-right:max(34px,env(safe-area-inset-right));padding-top:max(34px,env(safe-area-inset-top))}
+  .wrap{max-width:1080px}
+  .date{font-size:27px}
+  .dchip.main .dchip-num{font-size:36px}
+  .dchip-num{font-size:17px}
+  .dchip-lab{font-size:11.5px}
+  .head-r{flex-direction:row;align-items:flex-end;gap:22px}
+  .motto,.motto-edit{margin-top:20px;padding:16px 20px}
+  .motto-text,.motto-input{font-size:18px}
+  .tabs{margin:22px 0 20px}
+  .tab{font-size:16px;padding:12px 2px;margin-right:24px}
+  .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:34px;align-items:start}
+  .bar{height:64px}
+  .display{padding:34px 0 30px;border-bottom:none}
+  .disp-num{font-size:76px}
+  .disp-label{font-size:14px}
+  .disp-sub{font-size:13.5px}
+  .list{margin-top:0}
+  .row{padding:15px 15px 15px 0}
+  .name{font-size:16px}
+  .play{padding:12px 22px;font-size:14px;min-width:96px}
+  .foot{text-align:left}
+  .stats{gap:12px}
+  .stat{padding:14px 10px}
+  .stat-v{font-size:23px}
+  .stat-k{font-size:11.5px}
+  .stat-s{font-size:11px}
+  .col-track{height:210px}
+  .col-val{font-size:11px;height:14px}
+  .col-lab{font-size:11px}
+  .chart{padding:18px 16px 12px}
+  .log-cols{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:start}
+  .sublist li{font-size:13.5px}
+  .proj{font-size:14px}
+}
+@media (max-width:400px){
+  .disp-num{font-size:44px}
+  .play{min-width:78px;padding:11px 13px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .col-track{height:120px}
+}
+@media (prefers-reduced-motion:reduce){
+  .seg-fill{transition:none}
+  .cursor{animation:none}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="wrap" id="root"></div></div>
+
+<script>
+"use strict";
+
+/* ===== 저장소: Claude 아티팩트 안에서는 window.storage, 밖에서는 localStorage ===== */
+var Store = {
+  get: function (k) {
+    if (window.storage && window.storage.get) {
+      return window.storage.get(k).then(function (r) { return r && r.value ? r.value : null; })
+        .catch(function () { return null; });
+    }
+    try { return Promise.resolve(localStorage.getItem(k)); }
+    catch (e) { return Promise.resolve(null); }
+  },
+  set: function (k, v) {
+    if (window.storage && window.storage.set) {
+      return window.storage.set(k, v).catch(function () {});
+    }
+    try { localStorage.setItem(k, v); } catch (e) {}
+    return Promise.resolve();
+  }
+};
+
+var KEY = "sn-timer";
+var LEGACY = ["sn-timer-v2", "sn-timer-v1"];
+var SCHEMA = 3;
+var MOTTO_MAX = 50;
+var PALETTE = ["#7A3B2E","#1F4A5C","#4A4067","#3F5B34","#8A5A1F","#5B3A52","#2E4A3F"];
+
+/* ===== 유틸 ===== */
+function p2(n){ return String(n).padStart(2,"0"); }
+function todayKey(d){ d = d || new Date(); return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate()); }
+function parseKey(k){ var a=k.split("-").map(Number); return new Date(a[0],a[1]-1,a[2]); }
+function daysBetween(a,b){ return Math.round((parseKey(b)-parseKey(a))/86400000); }
+function fmtClock(sec){ var s=Math.max(0,Math.floor(sec)); return Math.floor(s/3600)+":"+p2(Math.floor(s%3600/60))+":"+p2(s%60); }
+function fmtHM(sec){
+  var s=Math.max(0,Math.round(sec)), h=Math.floor(s/3600), m=Math.round(s%3600/60);
+  if(h===0) return m+"분"; if(m===0) return h+"시간"; return h+"시간 "+m+"분";
+}
+function fmtHours(sec){ return (sec/3600).toFixed(1); }
+function dateLabel(k){ var d=parseKey(k), w=["일","월","화","수","목","금","토"];
+  return (d.getMonth()+1)+"월 "+d.getDate()+"일 "+w[d.getDay()]+"요일"; }
+function shortLabel(k){ var d=parseKey(k); return (d.getMonth()+1)+"/"+d.getDate(); }
+function ddayText(n){ return n>0 ? "D-"+n : n===0 ? "D-DAY" : "D+"+(-n); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+/* ===== 상태 ===== */
+function defaultState(){
+  return {
+    v: SCHEMA, dateKey: todayKey(), totalMin: 600, motto: "",
+    targets: [
+      { id:"t-main", label:"2027학년도 수능", date:"2026-11-19" },
+      { id:"t-sub",  label:"9월 모평",        date:"2026-09-02" }
+    ],
+    subjects: [
+      { id:"s1", name:"국어",   allocMin:120, elapsedSec:0, color:PALETTE[0] },
+      { id:"s2", name:"수학",   allocMin:180, elapsedSec:0, color:PALETTE[1] },
+      { id:"s3", name:"영어",   allocMin:90,  elapsedSec:0, color:PALETTE[2] },
+      { id:"s4", name:"탐구 1", allocMin:105, elapsedSec:0, color:PALETTE[3] },
+      { id:"s5", name:"탐구 2", allocMin:105, elapsedSec:0, color:PALETTE[4] }
+    ],
+    running: null, history: []
+  };
+}
+
+function migrate(saved){
+  var base = defaultState();
+  if(!saved || !Array.isArray(saved.subjects)) return base;
+  var targets = (Array.isArray(saved.targets) && saved.targets.length) ? saved.targets
+    : saved.target ? [{id:"t-main",label:saved.target.label,date:saved.target.date}, base.targets[1]]
+    : base.targets;
+  var out = Object.assign({}, base, saved);
+  out.v = SCHEMA;
+  out.motto = typeof saved.motto === "string" ? saved.motto.slice(0,MOTTO_MAX) : "";
+  out.targets = targets;
+  out.subjects = saved.subjects.map(function(s,i){
+    return { id:s.id||("s"+i), name:s.name||"과목",
+      allocMin:Number(s.allocMin)||0, elapsedSec:Number(s.elapsedSec)||0,
+      color:s.color||PALETTE[i%PALETTE.length] };
+  });
+  out.history = (saved.history||[]).map(function(h){
+    return { date:h.date, totalMin:(h.totalMin==null?base.totalMin:h.totalMin),
+      usedSec:h.usedSec||0, bySubject:h.bySubject||null, motto:h.motto||"" };
+  });
+  return out;
+}
+
+function rollover(s){
+  var today = todayKey();
+  if(s.dateKey === today) return s;
+  var base = s;
+  if(base.running){
+    var add = (Date.now()-base.running.startedAt)/1000, rid = base.running.id;
+    base = Object.assign({}, base, {
+      subjects: base.subjects.map(function(x){
+        return x.id===rid ? Object.assign({},x,{elapsedSec:x.elapsedSec+add}) : x; }),
+      running: null
+    });
+  }
+  var used = base.subjects.reduce(function(a,x){ return a+x.elapsedSec; },0);
+  var hist = (base.history||[]).slice();
+  if(used > 0){
+    hist.push({
+      date: base.dateKey, totalMin: base.totalMin, usedSec: used, motto: base.motto||"",
+      bySubject: base.subjects.filter(function(x){ return x.elapsedSec>0; })
+        .map(function(x){ return {name:x.name,color:x.color,sec:x.elapsedSec}; })
+    });
+  }
+  return Object.assign({}, base, {
+    dateKey: today,
+    subjects: base.subjects.map(function(x){ return Object.assign({},x,{elapsedSec:0}); }),
+    running: null, history: hist.slice(-180)
+  });
+}
+
+var S = defaultState();
+var ui = { tab:"today", editing:false, mottoEdit:false, mottoDraft:"",
+           pendingDelete:null, staleRun:null, range:14, backup:null, msg:"" };
+var saveT = null, logT = 0;
+
+function save(){
+  clearTimeout(saveT);
+  saveT = setTimeout(function(){ Store.set(KEY, JSON.stringify(S)); }, 400);
+}
+
+function liveSec(sub){
+  return (S.running && S.running.id===sub.id)
+    ? sub.elapsedSec + (Date.now()-S.running.startedAt)/1000
+    : sub.elapsedSec;
+}
+function commitRunning(){
+  if(!S.running) return;
+  var add=(Date.now()-S.running.startedAt)/1000, rid=S.running.id;
+  S.subjects.forEach(function(x){ if(x.id===rid) x.elapsedSec += add; });
+  S.running = null;
+}
+
+/* ===== 화면 꺼짐 방지 (지원 기기에서만) ===== */
+var wakeLock = null;
+function requestWake(){
+  if(!navigator.wakeLock || wakeLock) return;
+  navigator.wakeLock.request("screen").then(function(l){
+    wakeLock = l;
+    l.addEventListener("release", function(){ wakeLock = null; });
+  }).catch(function(){});
+}
+function releaseWake(){ if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock=null; } }
+document.addEventListener("visibilitychange", function(){
+  if(document.visibilityState==="visible" && S.running) requestWake();
+});
+
+/* ===== 액션 ===== */
+function toggle(id){
+  ui.staleRun = null;
+  if(S.running && S.running.id===id){ commitRunning(); releaseWake(); }
+  else { commitRunning(); S.running = {id:id, startedAt:Date.now()}; requestWake(); }
+  save(); render();
+}
+function discardRun(){ S.running=null; ui.staleRun=null; releaseWake(); save(); render(); }
+function bumpAlloc(id,d){
+  S.subjects.forEach(function(x){ if(x.id===id) x.allocMin=Math.max(0,x.allocMin+d); });
+  save(); render();
+}
+function bumpTotal(d){ S.totalMin = Math.max(30, S.totalMin+d); save(); render(); }
+function addSubject(){
+  S.subjects.push({ id:"s"+Date.now(), name:"새 과목", allocMin:60, elapsedSec:0,
+    color:PALETTE[S.subjects.length%PALETTE.length] });
+  save(); render();
+}
+function removeSubject(id){
+  if(S.running && S.running.id===id){ commitRunning(); releaseWake(); }
+  S.subjects = S.subjects.filter(function(x){ return x.id!==id; });
+  ui.pendingDelete=null; save(); render();
+}
+function resetToday(){
+  S.subjects.forEach(function(x){ x.elapsedSec=0; });
+  S.running=null; ui.pendingDelete=null; releaseWake(); save(); render();
+}
+function setName(id,val){ S.subjects.forEach(function(x){ if(x.id===id) x.name=val; }); save(); }
+function setTarget(id,field,val){
+  S.targets.forEach(function(t){ if(t.id===id) t[field]=val; }); save();
+  renderHeaderOnly();
+}
+function saveMotto(){
+  S.motto = (ui.mottoDraft||"").trim().slice(0,MOTTO_MAX);
+  ui.mottoEdit=false; save(); render();
+}
+function doRestore(text){
+  try{
+    S = rollover(migrate(JSON.parse(text)));
+    ui.msg="복원했어요."; save(); render();
+  }catch(e){ ui.msg="백업 코드를 읽지 못했어요. 전체를 그대로 붙여넣었는지 확인해 주세요."; render(); }
+}
+
+/* ===== 렌더 ===== */
+function render(){
+  var root = document.getElementById("root");
+  root.innerHTML = headerHTML() + mottoHTML() + tabsHTML() + alertHTML()
+    + (ui.editing ? settingsHTML() : "")
+    + (ui.tab==="today" ? todayHTML() : logHTML());
+  bind();
+  if(ui.mottoEdit){
+    var mi = document.getElementById("mottoInput");
+    if(mi){ mi.focus(); mi.setSelectionRange(mi.value.length, mi.value.length); }
+  }
+  tick();
+}
+function renderHeaderOnly(){
+  var h = document.getElementById("headR");
+  if(h) h.innerHTML = ddayHTML();
+}
+
+function ddayHTML(){
+  return S.targets.map(function(t,i){
+    var d = daysBetween(S.dateKey, t.date);
+    return '<div class="dchip'+(i===0?" main":"")+'">'
+      + '<span class="dchip-num">'+ddayText(d)+'</span>'
+      + '<span class="dchip-lab">'+esc(t.label)+'</span></div>';
+  }).join("");
+}
+function headerHTML(){
+  return '<header class="head"><div>'
+    + '<div class="eyebrow">오늘의 공부 예산</div>'
+    + '<h1 class="date">'+dateLabel(S.dateKey)+'</h1></div>'
+    + '<div class="head-r" id="headR">'+ddayHTML()+'</div></header>';
+}
+function mottoHTML(){
+  if(ui.mottoEdit){
+    var d = ui.mottoDraft||"";
+    return '<div class="motto-edit">'
+      + '<input id="mottoInput" class="motto-input" maxlength="'+MOTTO_MAX+'" value="'+esc(d)+'" '
+      + 'placeholder="오늘 가장 중요하게 붙잡을 한 문장" aria-label="오늘의 문장">'
+      + '<div class="motto-foot"><span class="count'+(d.length>=MOTTO_MAX?" full":"")+'" id="mottoCount">'
+      + d.length+' / '+MOTTO_MAX+'</span>'
+      + '<div class="motto-acts"><button class="ghost" data-act="mottoCancel">취소</button>'
+      + '<button class="solid" data-act="mottoSave">저장</button></div></div></div>';
+  }
+  return '<button class="motto'+(S.motto?"":" blank")+'" data-act="mottoOpen" aria-label="오늘의 문장 수정">'
+    + '<span class="motto-mark">&ldquo;</span><span class="motto-text">'
+    + esc(S.motto || "오늘 가장 중요하게 붙잡을 한 문장을 적어두세요")+'</span></button>';
+}
+function tabsHTML(){
+  return '<nav class="tabs">'
+    + '<button class="tab'+(ui.tab==="today"?" on":"")+'" data-act="tab" data-v="today">오늘</button>'
+    + '<button class="tab'+(ui.tab==="log"?" on":"")+'" data-act="tab" data-v="log">기록</button>'
+    + '<button class="ghost tab-edit" data-act="editToggle">'+(ui.editing?"완료":"설정")+'</button></nav>';
+}
+function alertHTML(){
+  if(ui.staleRun==null) return "";
+  return '<div class="alert"><div>타이머가 <b>'+fmtHM(ui.staleRun)
+    + '</b>째 켜져 있었어요. 실제로 공부한 시간이 맞나요?</div>'
+    + '<div class="alert-acts"><button class="ghost" data-act="staleKeep">맞아요, 계속</button>'
+    + '<button class="ghost danger" data-act="staleDrop">이 구간 버리기</button></div></div>';
+}
+
+function totalsNow(){
+  var totalSec = S.totalMin*60;
+  var allocSum = S.subjects.reduce(function(a,s){ return a+s.allocMin*60; },0);
+  var usedSec  = S.subjects.reduce(function(a,s){ return a+liveSec(s); },0);
+  return { totalSec:totalSec, allocSum:allocSum, usedSec:usedSec };
+}
+
+function todayHTML(){
+  var t = totalsNow();
+  var segs = S.subjects.map(function(s){
+    return '<div class="seg" data-seg="'+s.id+'" style="flex-grow:0;background:'+s.color+'22">'
+      + '<div class="seg-fill" data-fill="'+s.id+'" style="width:0%;background:'+s.color+'"></div>'
+      + '<div class="plan" data-plan="'+s.id+'" style="display:none"></div>'
+      + '<div class="cursor" data-cursor="'+s.id+'" style="left:0%;background:'+s.color+';display:none"></div></div>';
+  }).join("");
+  segs += '<div class="seg unalloc" id="unallocSeg" style="flex-grow:0;display:none"></div>'
+    + '<div class="goal-mark" id="goalMark" style="display:none"><span>목표</span></div>';
+
+  var rows = S.subjects.map(function(s){
+    var isOn = S.running && S.running.id===s.id;
+    var mid = ui.editing
+      ? '<div class="stepper small"><button data-act="alloc" data-id="'+s.id+'" data-v="-10">−</button>'
+        + '<span class="v">'+fmtHM(s.allocMin*60)+'</span>'
+        + '<button data-act="alloc" data-id="'+s.id+'" data-v="10">+</button></div>'
+      : '<div class="meta"><span class="mono" data-clock="'+s.id+'">0:00:00</span>'
+        + '<span class="sep">/</span><span>'+fmtHM(s.allocMin*60)+'</span>'
+        + '<span class="left" data-left="'+s.id+'"></span></div>';
+    var head = ui.editing
+      ? '<input class="name-input" data-name="'+s.id+'" value="'+esc(s.name)+'" aria-label="과목 이름">'
+      : '<div class="name">'+esc(s.name)+'</div>';
+    var right = ui.editing
+      ? (ui.pendingDelete===s.id
+          ? '<button class="del confirm" data-act="del" data-id="'+s.id+'">삭제할까요?</button>'
+          : '<button class="del" data-act="delAsk" data-id="'+s.id+'">삭제</button>')
+      : '<button class="play" data-act="toggle" data-id="'+s.id+'" style="'
+        + (isOn ? "background:"+s.color+";border-color:"+s.color+";color:#fff"
+                : "border-color:"+s.color+";color:"+s.color)+'">'
+        + (isOn?"일시정지":"시작")+'</button>';
+    return '<li class="row'+(isOn?" on":"")+'"'+(isOn?' style="border-color:'+s.color+'"':"")+'>'
+      + '<span class="tick" style="background:'+s.color+'"></span>'
+      + '<div class="row-main">'+head+mid+'</div>'+right+'</li>';
+  }).join("");
+
+  return '<div class="cols"><div class="col-a">'
+    + '<div class="bar">'+segs+'</div>'
+    + '<div class="bar-scale"><span>0</span><span id="barScale"></span></div>'
+    + '<section class="display">'
+    + '<div class="disp-label" id="dispLabel"></div>'
+    + '<div class="disp-num" id="dispNum">0:00:00</div>'
+    + '<div class="disp-sub" id="dispSub"></div></section></div>'
+    + '<div class="col-b"><ul class="list">'+rows+'</ul>'
+    + (ui.editing ? '<button class="add" data-act="addSub">과목 추가</button>' : "")
+    + '<footer class="foot"><button class="ghost danger" data-act="resetToday">오늘 기록 초기화</button></footer>'
+    + '</div></div>';
+}
+
+function seriesAll(){
+  var t = totalsNow();
+  var today = {
+    date:S.dateKey, totalMin:S.totalMin, usedSec:t.usedSec, motto:S.motto, isToday:true,
+    bySubject: S.subjects.filter(function(x){ return liveSec(x)>0; })
+      .map(function(x){ return {name:x.name,color:x.color,sec:liveSec(x)}; })
+  };
+  return S.history.filter(function(h){ return h.date!==S.dateKey; }).concat([today]);
+}
+function calcStreak(all){
+  var set = {}; all.forEach(function(h){ if(h.usedSec>0) set[h.date]=1; });
+  var n=0, cur=parseKey(S.dateKey);
+  if(!set[S.dateKey]) cur.setDate(cur.getDate()-1);
+  while(set[todayKey(cur)]){ n++; cur.setDate(cur.getDate()-1); }
+  return n;
+}
+
+function logHTML(){
+  var t = totalsNow();
+  var all = seriesAll();
+  var recorded = all.filter(function(h){ return h.usedSec>0; });
+  if(recorded.length===0){
+    return '<div class="empty"><div class="empty-t">아직 쌓인 기록이 없어요.</div>'
+      + '<div class="empty-s">오늘 탭에서 타이머를 돌리면 여기에 일별 그래프가 그려져요.'
+      + ' 자정이 지나면 그날 기록이 자동으로 저장됩니다.</div></div>';
+  }
+  var series = all.slice(-ui.range);
+  var cum = recorded.reduce(function(a,h){ return a+h.usedSec; },0);
+  var avg = cum/recorded.length;
+  var goalHit = recorded.filter(function(h){ return h.usedSec >= h.totalMin*60; }).length;
+  var streak = calcStreak(all);
+  var dday = Math.max(0, daysBetween(S.dateKey, S.targets[0].date));
+  var peak = Math.max.apply(null, series.map(function(h){ return h.usedSec; }).concat([t.totalSec,1]));
+  var chartMax = peak*1.08;
+  var goalY = (t.totalSec/chartMax)*100;
+
+  var map = {};
+  recorded.forEach(function(h){
+    (h.bySubject||[]).forEach(function(b){
+      if(!map[b.name]) map[b.name] = {name:b.name,color:b.color,sec:0};
+      map[b.name].sec += b.sec; if(b.color) map[b.name].color = b.color;
+    });
+  });
+  var subs = Object.keys(map).map(function(k){ return map[k]; }).sort(function(a,b){ return b.sec-a.sec; });
+  var subSum = subs.reduce(function(a,s){ return a+s.sec; },0) || 1;
+
+  var cols = series.map(function(h){
+    var stack = (h.bySubject && h.bySubject.length ? h.bySubject
+                 : [{name:"기록",color:"#5A626B",sec:h.usedSec}]).filter(function(b){ return b.sec>0; });
+    return '<div class="col" title="'+h.date+' · '+fmtHM(h.usedSec)+'">'
+      + '<div class="col-val">'+(h.usedSec>0?fmtHours(h.usedSec):"")+'</div>'
+      + '<div class="col-track"><div class="col-stack'+(h.isToday?" today":"")+'" style="height:'
+      + ((h.usedSec/chartMax)*100)+'%">'
+      + stack.map(function(b){ return '<div class="col-seg" style="flex-grow:'+b.sec+';background:'+b.color+'"></div>'; }).join("")
+      + '</div></div><div class="col-lab'+(h.isToday?" today":"")+'">'+shortLabel(h.date)+'</div></div>';
+  }).join("");
+
+  var mottos = recorded.slice().reverse().filter(function(h){ return h.motto; }).slice(0,6);
+
+  return '<div class="stats">'
+    + stat("누적", fmtHours(cum)+"h", recorded.length+"일 기록")
+    + stat("일평균", fmtHours(avg)+"h", "목표 "+fmtHours(t.totalSec)+"h")
+    + stat("연속", streak+"일", "공부한 날")
+    + stat("목표 달성", goalHit+"일", Math.round(goalHit/recorded.length*100)+"%")
+    + '</div>'
+    + '<section class="chart-head"><div class="eyebrow">일별 공부량</div><div class="range">'
+    + [7,14,30].map(function(r){ return '<button class="rbtn'+(ui.range===r?" on":"")
+        + '" data-act="range" data-v="'+r+'">'+r+'일</button>'; }).join("")
+    + '</div></section>'
+    + '<div class="chart"><div class="chart-plot">'
+    + '<div class="goal-line" style="bottom:'+goalY+'%"><span class="goal-tag">목표 '+fmtHours(t.totalSec)+'h</span></div>'
+    + cols + '</div></div>'
+    + '<div class="log-cols"><section class="block"><div class="eyebrow">과목별 누적</div>'
+    + '<div class="mixbar">'+subs.map(function(s){
+        return '<div class="mix-seg" style="flex-grow:'+s.sec+';background:'+s.color+'" title="'+esc(s.name)+'"></div>'; }).join("")
+    + '</div><ul class="sublist">'+subs.map(function(s){
+        return '<li><span class="dot" style="background:'+s.color+'"></span>'
+          + '<span class="sub-n">'+esc(s.name)+'</span><span class="sub-p">'
+          + Math.round(s.sec/subSum*100)+'%</span><span class="sub-v mono">'+fmtHours(s.sec)+'h</span></li>'; }).join("")
+    + '</ul></section>'
+    + '<section class="block"><div class="eyebrow">'+esc(S.targets[0].label)+'까지 예상</div>'
+    + '<p class="proj">지금 일평균 <b>'+fmtHours(avg)+'시간</b>을 남은 <b>'+dday+'일</b> 동안 유지하면 누적 <b>'
+    + Math.round((cum+avg*dday)/3600)+'시간</b>이 돼요. 목표 페이스('+fmtHours(t.totalSec)+'h/일)로는 '
+    + Math.round((cum+t.totalSec*dday)/3600)+'시간입니다.</p>'
+    + '<p class="proj-cav">기록된 '+recorded.length+'일 평균이라 표본이 적을수록 흔들려요. 쉬는 날은 평균에 들어가지 않으니 실제 누적은 이 값보다 낮게 나오는 편입니다.</p>'
+    + (mottos.length ? '<div class="eyebrow" style="margin-top:22px">지나온 문장</div><ul class="mottolog">'
+        + mottos.map(function(h){ return '<li><span class="ml-d mono">'+shortLabel(h.date)
+            + '</span><span class="ml-t">'+esc(h.motto)+'</span></li>'; }).join("")+'</ul>' : "")
+    + '</section></div>';
+}
+function stat(k,v,s){
+  return '<div class="stat"><div class="stat-k">'+k+'</div><div class="stat-v mono">'+v
+    + '</div><div class="stat-s">'+s+'</div></div>';
+}
+
+function settingsHTML(){
+  var t = totalsNow();
+  var over = t.allocSum > t.totalSec, un = Math.max(0, t.totalSec-t.allocSum);
+  return '<div class="budget">'
+    + '<div class="budget-row"><span class="k">하루 총 가용 시간</span><div class="stepper">'
+    + '<button data-act="total" data-v="-30">−</button><span class="v">'+fmtHM(S.totalMin*60)+'</span>'
+    + '<button data-act="total" data-v="30">+</button></div></div>'
+    + '<div class="budget-note'+(over?" warn":"")+'">'
+    + (over ? "배분 합계가 총 시간보다 "+fmtHM(t.allocSum-t.totalSec)+" 많아요."
+            : un>0 ? "아직 "+fmtHM(un)+" 남았어요." : "총 시간을 빈틈없이 배분했어요.")
+    + '</div><div class="divider"></div><div class="eyebrow">목표일</div>'
+    + S.targets.map(function(tg){
+        return '<div class="target-row">'
+          + '<input class="name-input" data-tlabel="'+tg.id+'" value="'+esc(tg.label)+'" aria-label="목표 이름">'
+          + '<input type="date" class="date-input" data-tdate="'+tg.id+'" value="'+tg.date+'" aria-label="목표 날짜"></div>';
+      }).join("")
+    + '<div class="budget-note">기본값은 2027학년도 수능 2026-11-19(목), 9월 모평 2026-09-02(수)예요.</div>'
+    + '<div class="divider"></div><div class="eyebrow">데이터</div>'
+    + '<div class="budget-note">기록은 이 기기에 자동 저장돼요. 기기를 바꾸기 전에 백업 코드를 복사해 두면 안전합니다.</div>'
+    + '<div class="data-acts"><button class="ghost" data-act="backupShow">백업 코드 보기</button>'
+    + '<button class="ghost" data-act="backupHide">닫기</button></div>'
+    + (ui.backup ? '<textarea class="ta" readonly id="backupTA">'+esc(ui.backup)+'</textarea>'
+        + '<div class="budget-note">전체 선택 후 복사해서 메모 앱에 보관하세요.</div>' : "")
+    + '<textarea class="ta" id="restoreTA" placeholder="백업 코드를 붙여넣고 복원"></textarea>'
+    + '<div class="data-acts"><button class="solid" data-act="restore">복원</button>'
+    + (ui.msg ? '<span class="msg">'+esc(ui.msg)+'</span>' : "")+'</div></div>';
+}
+
+/* ===== 이벤트 ===== */
+function bind(){
+  var root = document.getElementById("root");
+  root.querySelectorAll("[data-act]").forEach(function(el){
+    el.addEventListener("click", function(){
+      var a = el.getAttribute("data-act"), id = el.getAttribute("data-id"), v = el.getAttribute("data-v");
+      if(a==="toggle") toggle(id);
+      else if(a==="alloc") bumpAlloc(id, Number(v));
+      else if(a==="total") bumpTotal(Number(v));
+      else if(a==="addSub") addSubject();
+      else if(a==="delAsk"){ ui.pendingDelete=id; render(); }
+      else if(a==="del") removeSubject(id);
+      else if(a==="resetToday") resetToday();
+      else if(a==="tab"){ ui.tab=v; render(); }
+      else if(a==="editToggle"){ ui.editing=!ui.editing; ui.pendingDelete=null; ui.msg=""; render(); }
+      else if(a==="range"){ ui.range=Number(v); render(); }
+      else if(a==="mottoOpen"){ ui.mottoEdit=true; ui.mottoDraft=S.motto; render(); }
+      else if(a==="mottoCancel"){ ui.mottoEdit=false; render(); }
+      else if(a==="mottoSave") saveMotto();
+      else if(a==="staleKeep"){ ui.staleRun=null; render(); }
+      else if(a==="staleDrop") discardRun();
+      else if(a==="backupShow"){ ui.backup=JSON.stringify(S); render(); }
+      else if(a==="backupHide"){ ui.backup=null; ui.msg=""; render(); }
+      else if(a==="restore"){
+        var ta=document.getElementById("restoreTA");
+        if(ta && ta.value.trim()) doRestore(ta.value.trim());
+      }
+    });
+  });
+  root.querySelectorAll("[data-name]").forEach(function(el){
+    el.addEventListener("input", function(){ setName(el.getAttribute("data-name"), el.value); });
+  });
+  root.querySelectorAll("[data-tlabel]").forEach(function(el){
+    el.addEventListener("input", function(){ setTarget(el.getAttribute("data-tlabel"),"label",el.value); });
+  });
+  root.querySelectorAll("[data-tdate]").forEach(function(el){
+    el.addEventListener("change", function(){ setTarget(el.getAttribute("data-tdate"),"date",el.value); });
+  });
+  var mi = document.getElementById("mottoInput");
+  if(mi){
+    mi.addEventListener("input", function(){
+      ui.mottoDraft = mi.value.slice(0,MOTTO_MAX);
+      var c = document.getElementById("mottoCount");
+      if(c){ c.textContent = ui.mottoDraft.length+" / "+MOTTO_MAX;
+        c.className = "count" + (ui.mottoDraft.length>=MOTTO_MAX ? " full" : ""); }
+    });
+    mi.addEventListener("keydown", function(e){
+      if(e.key==="Enter") saveMotto();
+      if(e.key==="Escape"){ ui.mottoEdit=false; render(); }
+    });
+  }
+  var bta = document.getElementById("backupTA");
+  if(bta) bta.addEventListener("focus", function(){ bta.select(); });
+}
+
+/* ===== 틱: 구조는 그대로 두고 숫자/막대만 갱신 ===== */
+function tick(){
+  if(S.dateKey !== todayKey()){ S = rollover(S); save(); render(); return; }
+  if(ui.tab !== "today") {
+    logT++;
+    if(logT > 120 && !ui.editing && !ui.mottoEdit){ logT = 0; render(); }
+    return;
+  }
+  var t = totalsNow();
+  var active = S.running ? S.subjects.filter(function(x){ return x.id===S.running.id; })[0] : null;
+
+  /* 실제 차지하는 폭 = max(배분, 실제 경과). 넘기면 그 과목 칸이 늘어난다. */
+  var eff = S.subjects.map(function(s){ return Math.max(s.allocMin*60, liveSec(s)); });
+  var sumEff = eff.reduce(function(a,b){ return a+b; }, 0);
+  var base = Math.max(t.totalSec, sumEff, 1);
+
+  S.subjects.forEach(function(s, i){
+    var el = liveSec(s), alloc = s.allocMin*60, left = alloc-el, e = eff[i];
+    var over = el > alloc;
+    var seg = document.querySelector('[data-seg="'+s.id+'"]');
+    if(seg){
+      seg.style.display = e>0 ? "" : "none";
+      seg.style.flexGrow = e/base;
+      seg.style.boxShadow = (alloc>0 && el>=alloc) ? "inset 0 2px 0 0 "+s.color : "none";
+    }
+    var fill = document.querySelector('[data-fill="'+s.id+'"]');
+    if(fill) fill.style.width = (e>0 ? Math.min(1, el/e)*100 : 0)+"%";
+    var plan = document.querySelector('[data-plan="'+s.id+'"]');
+    if(plan){
+      plan.style.display = (over && e>0) ? "block" : "none";
+      if(over && e>0) plan.style.left = (alloc/e)*100+"%";
+    }
+    var cur = document.querySelector('[data-cursor="'+s.id+'"]');
+    if(cur){
+      var on = S.running && S.running.id===s.id;
+      cur.style.display = on ? "block" : "none";
+      if(on) cur.style.left = (e>0 ? Math.min(1, el/e)*100 : 0)+"%";
+    }
+    var ck = document.querySelector('[data-clock="'+s.id+'"]');
+    if(ck) ck.textContent = fmtClock(el);
+    var lf = document.querySelector('[data-left="'+s.id+'"]');
+    if(lf){
+      lf.textContent = over ? "+"+fmtHM(-left) : fmtHM(left)+" 남음";
+      lf.className = "left" + (over ? " over" : "");
+      lf.style.color = over ? s.color : "";
+    }
+  });
+
+  var un = document.getElementById("unallocSeg");
+  var rest = Math.max(0, t.totalSec - sumEff);
+  if(un){ un.style.display = rest>0 ? "" : "none"; un.style.flexGrow = rest/base; }
+
+  var gm = document.getElementById("goalMark");
+  if(gm){
+    var passed = sumEff > t.totalSec;
+    gm.style.display = passed ? "block" : "none";
+    if(passed) gm.style.left = (t.totalSec/base)*100+"%";
+  }
+  var sc = document.getElementById("barScale");
+  if(sc){
+    sc.textContent = sumEff > t.totalSec
+      ? "합계 "+fmtHM(sumEff)+" · 목표 대비 +"+fmtHM(sumEff-t.totalSec)
+      : "총 "+fmtHM(t.totalSec);
+  }
+
+  var dl = document.getElementById("dispLabel"),
+      dn = document.getElementById("dispNum"),
+      ds = document.getElementById("dispSub");
+  if(!dn) return;
+  if(active){
+    var el2 = liveSec(active), alloc2 = active.allocMin*60, over2 = el2 > alloc2;
+    dl.className = "disp-label"; dl.style.color = active.color;
+    dl.innerHTML = '<span class="dot" style="background:'+active.color+'"></span>'
+      + esc(active.name)+(over2 ? ' 누적' : ' 진행 중');
+    dn.textContent = over2 ? fmtClock(el2) : fmtClock(alloc2-el2);
+    ds.textContent = over2
+      ? "배분 "+fmtHM(alloc2)+" 넘어 계속 쌓는 중 · +"+fmtHM(el2-alloc2)
+      : "이 과목 남은 시간 · "+fmtHM(el2)+" 사용";
+  } else {
+    var overD = t.usedSec > t.totalSec;
+    dl.className = "disp-label muted"; dl.style.color = "";
+    dl.textContent = overD ? "오늘 누적" : "하루 남은 시간";
+    dn.textContent = overD ? fmtClock(t.usedSec) : fmtClock(t.totalSec-t.usedSec);
+    ds.textContent = overD
+      ? "목표 "+fmtHM(t.totalSec)+" 넘김 · +"+fmtHM(t.usedSec-t.totalSec)
+      : fmtHM(t.totalSec)+" 중 "+fmtHM(t.usedSec)+" 사용 · "
+        + Math.round(t.usedSec/Math.max(1,t.totalSec)*100)+"%";
+  }
+}
+
+/* ===== 시작 ===== */
+(function boot(){
+  Store.get(KEY).then(function(raw){
+    if(raw) return raw;
+    return Store.get(LEGACY[0]).then(function(r2){ return r2 || Store.get(LEGACY[1]); });
+  }).then(function(raw){
+    if(raw){
+      try{
+        S = rollover(migrate(JSON.parse(raw)));
+        if(S.running){
+          var gap = (Date.now()-S.running.startedAt)/1000;
+          if(gap > 3*3600) ui.staleRun = gap;
+          requestWake();
+        }
+      }catch(e){}
+    }
+    render();
+    setInterval(tick, 250);
+  });
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    });
+  }
+})();
+</script>
+</body>
+</html>
